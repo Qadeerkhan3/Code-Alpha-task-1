@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        .player-container {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .cover-art {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            margin-bottom: 1rem;
+            object-fit: cover;
+        }
+
+        .song-info {
+            margin-bottom: 1.5rem;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .progress-container {
+            background-color: #ddd;
+            border-radius: 5px;
+            height: 5px;
+            margin: 1rem 0;
+            cursor: pointer;
+        }
+
+        .progress {
+            background-color: #4CAF50;
+            border-radius: 5px;
+            height: 100%;
+            width: 0%;
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="player-container">
+        <img src="https://picsum.photos/200" alt="Cover Art" class="cover-art">
+        <div class="song-info">
+            <h2 class="title">Song Title</h2>
+            <p class="artist">Artist Name</p>
+        </div>
+        <audio id="audio-element"></audio>
+        <div class="progress-container">
+            <div class="progress"></div>
+        </div>
+        <div class="time-display">
+            <span class="current-time">0:00</span>
+            <span class="duration">0:00</span>
+        </div>
+        <div class="controls">
+            <button id="prev-btn">⏮</button>
+            <button id="play-btn">▶</button>
+            <button id="next-btn">⏭</button>
+        </div>
+    </div>
+
+    <script>
+      const songs = [
+            {
+                title: "Electronic Mix",
+                artist: "Alex Bess",
+                file: "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Algorithms.mp3",
+                cover: "https://picsum.photos/200"
+            },
+            {
+                title: "Jazz Blues",
+                artist: "Muzaproduction",
+                file: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+                cover: "https://picsum.photos/201"
+            },
+            {
+                title: "Classical Piano",
+                artist: "Debussy",
+                file: "https://ia800905.us.archive.org/19/items/FreePublicDomainPianoMusic_201306/Free%20Public%20Domain%20Piano%20Music/Claude%20Debussy/Clair%20De%20Lune.mp3",
+                cover: "https://picsum.photos/202"
+            }
+        ];
+
+        // Rest of the JavaScript code remains the same
+        const audioElement = new Audio();
+        const playBtn = document.getElementById('play-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const coverArt = document.querySelector('.cover-art');
+        const title = document.querySelector('.title');
+        const artist = document.querySelector('.artist');
+        const progress = document.querySelector('.progress');
+        const progressContainer = document.querySelector('.progress-container');
+        const currentTimeDisplay = document.querySelector('.current-time');
+        const durationDisplay = document.querySelector('.duration');
+
+        let songIndex = 0;
+
+        audioElement.crossOrigin = "anonymous";
+
+        function loadSong(song) {
+            title.textContent = song.title;
+            artist.textContent = song.artist;
+            coverArt.src = song.cover;
+            audioElement.src = song.file;
+            progress.style.width = '0%';
+            currentTimeDisplay.textContent = '0:00';
+            durationDisplay.textContent = '0:00';
+            audioElement.load();
+        }
+
+        function playPause() {
+            if (audioElement.paused) {
+                const playPromise = audioElement.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        playBtn.textContent = '⏸';
+                    }).catch(error => {
+                        console.error('Playback failed:', error);
+                        alert('Click anywhere on the page first to enable audio playback');
+                    });
+                }
+            } else {
+                audioElement.pause();
+                playBtn.textContent = '▶';
+            }
+        }
+
+        function updateProgress() {
+            const progressPercent = (audioElement.currentTime / audioElement.duration) * 100;
+            progress.style.width = `${progressPercent}%`;
+            
+            const formatTime = (time) => {
+                const minutes = Math.floor(time / 60);
+                const seconds = Math.floor(time % 60);
+                return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            };
+            
+            currentTimeDisplay.textContent = formatTime(audioElement.currentTime);
+            if (!isNaN(audioElement.duration)) {
+                durationDisplay.textContent = formatTime(audioElement.duration);
+            }
+        }
+
+        function setProgress(e) {
+            const width = this.clientWidth;
+            const clickX = e.offsetX;
+            audioElement.currentTime = (clickX / width) * audioElement.duration;
+        }
+
+        function nextSong() {
+            songIndex = (songIndex + 1) % songs.length;
+            loadSong(songs[songIndex]);
+            audioElement.play().catch(error => console.log('Auto-play prevented'));
+        }
+
+        function prevSong() {
+            songIndex = (songIndex - 1 + songs.length) % songs.length;
+            loadSong(songs[songIndex]);
+            audioElement.play().catch(error => console.log('Auto-play prevented'));
+        }
+
+        // Event Listeners
+        playBtn.addEventListener('click', playPause);
+        prevBtn.addEventListener('click', prevSong);
+        nextBtn.addEventListener('click', nextSong);
+        audioElement.addEventListener('timeupdate', updateProgress);
+        progressContainer.addEventListener('click', setProgress);
+        audioElement.addEventListener('ended', nextSong);
+        audioElement.addEventListener('error', (e) => {
+            console.error('Audio error:', audioElement.error);
+            alert('Error loading audio. Please try another song.');
+        });
+
+        // Initialize player
+        loadSong(songs[songIndex]);
+    </script>
+</body>
+</html>
